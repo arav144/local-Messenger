@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console</title> <!-- Title भी बदल दिया ताकि टैब में LAN Terminal न दिखे -->
+    <style>
+        /* 🔥 STEALTH THEME VARIABLES 🔥 */
+        :root {
+            --bg-color: #000000;
+            --text-main: #3a3a3a;    /* Very dim gray, barely visible from an angle */
+            --text-bright: #4a4a4a;  /* Slightly brighter for important text */
+            --text-dim: #1a1a1a;     /* Extremely dim for borders and time */
+            --font-family: 'Courier New', Courier, monospace;
+            --base-font-size: 9px;   /* Very small font size */
+        }
+
+        /* Base Reset */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: var(--font-family); 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            font-size: var(--base-font-size);
+            display: flex; 
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+
+        /* 🔥 STEALTH LOGIN SCREEN CSS 🔥 */
+        #login-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000000; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .login-box {
+            border: 1px solid var(--text-dim); /* Very thin, dark border */
+            padding: 20px;
+            width: 300px;
+            background-color: #000000;
+        }
+        
+        .input-field {
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed var(--text-dim);
+            color: var(--text-bright);
+            font-family: var(--font-family);
+            font-size: var(--base-font-size);
+            outline: none;
+            width: 100%;
+            margin: 5px 0 15px 0;
+        }
+
+        #login-err { color: #500000; margin-top: 10px; display: none; text-align: center; }
+        
+        /* Chat Interface */
+        #chat-container { 
+            width: 100%; 
+            max-width: 800px; 
+            display: none; 
+            flex-direction: column; 
+            height: 100vh; 
+            padding: 5px;
+            border: 1px solid var(--text-dim);
+        }
+        
+        #header { 
+            padding: 5px; 
+            border-bottom: 1px dashed var(--text-dim);
+            margin-bottom: 5px;
+        }
+        .sys-text { color: var(--text-bright); }
+
+        #messages { 
+            list-style: none; 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            padding-bottom: 10px;
+        }
+        
+        #messages::-webkit-scrollbar { width: 4px; }
+        #messages::-webkit-scrollbar-thumb { background: var(--text-dim); }
+
+        .msg-line { margin-bottom: 4px; line-height: 1.2; word-wrap: break-word; cursor: pointer; }
+        .msg-line:hover { background-color: #050505; }
+        
+        .msg-time { color: var(--text-dim); margin-right: 5px; }
+        .sender-name { color: var(--text-bright); margin-right: 3px; }
+        .self .sender-name { color: #444455; } 
+        
+        .msg-line.saved { border-left: 1px solid var(--text-bright); padding-left: 3px; color: var(--text-bright); }
+        .saved-tag { font-size: 8px; background: var(--text-dim); color: var(--text-bright); padding: 0 2px; margin-left: 5px; display: none; }
+        .msg-line.saved .saved-tag { display: inline-block; }
+
+        .msg-image { max-width: 150px; border: 1px solid var(--text-dim); margin-top: 3px; display: block; opacity: 0.5; }
+        .msg-image:hover { opacity: 1; } /* Hover to see image clearly */
+        
+        .file-link { color: #444455; text-decoration: none; }
+        .file-link:hover { text-decoration: underline; }
+
+        #input-area { 
+            display: flex; 
+            align-items: center; 
+            padding: 5px 0; 
+            border-top: 1px dashed var(--text-dim);
+            margin-top: 5px;
+        }
+        
+        #prompt-symbol { margin-right: 5px; }
+        #file-input { display: none; }
+        
+        .cmd-btn { 
+            background: transparent; 
+            border: 1px solid var(--text-dim); 
+            color: var(--text-main); 
+            font-family: var(--font-family);
+            font-size: var(--base-font-size);
+            cursor: pointer; 
+            padding: 2px 5px;
+            margin-right: 5px;
+        }
+        .cmd-btn:hover { background: var(--text-dim); color: var(--text-bright); }
+        
+        #msg { 
+            flex-grow: 1; 
+            background: transparent; 
+            border: none; 
+            color: var(--text-bright); 
+            font-family: var(--font-family);
+            font-size: var(--base-font-size); 
+            outline: none; 
+        }
+        #msg:focus { caret-color: var(--text-main); }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <div class="sys-text" style="text-align: center; margin-bottom: 15px;">sys_login</div>
+        
+        <div>user:</div>
+        <input type="text" id="sys-user" class="input-field" autocomplete="off" autofocus />
+
+        <div>pass:</div>
+        <input type="password" id="sys-pass" class="input-field" autocomplete="off" />
+        
+        <button class="cmd-btn" style="width: 100%; margin-top: 5px;" onclick="checkAuth()">[AUTH]</button>
+        <div id="login-err">err: auth failed.</div>
+    </div>
+</div>
+
+<div id="chat-container">
+    <div id="header">
+        <div>sys_ver: 10.0.1.0</div>
+        <div>conn_status: active</div>
+    </div>
+    
+    <ul id="messages"></ul>
+
+    <div id="input-area">
+        <input type="file" id="file-input" />
+        <button class="cmd-btn" onclick="document.getElementById('file-input').click()">[ATT]</button>
+        <button class="cmd-btn" onclick="clearMessages()">[CLR]</button>
+        
+        <span id="prompt-symbol" class="sys-text"></span>
+        <input id="msg" autocomplete="off" />
+        
+        <button class="cmd-btn" onclick="sendMessage()">[SND]</button>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let username = "root";
+
+    // 🔊 WebAudio API - No external URLs, no autoplay issues
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playBeep(type) {
+        try {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'send') {
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } else {
+                oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(700, audioCtx.currentTime + 0.15);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.15);
+            }
+        } catch(e) { console.log('Audio error:', e); }
+    }
+
+    document.getElementById("sys-user").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") document.getElementById("sys-pass").focus();
+    });
+
+    document.getElementById("sys-pass").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") checkAuth();
+    });
+
+    function checkAuth() {
+        const pwd = document.getElementById("sys-pass").value;
+        const user = document.getElementById("sys-user").value.trim();
+        
+        if (pwd === "saurav@144") { 
+            username = user !== "" ? user : "root";
+
+            // AudioContext resume karo user interaction pe (login button click)
+            audioCtx.resume().then(() => playBeep('send'));
+
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("chat-container").style.display = "flex";
+            
+            document.getElementById('prompt-symbol').innerText = `${username}:~$`;
+            document.getElementById("msg").focus();
+        } else {
+            document.getElementById("login-err").style.display = "block";
+            document.getElementById("sys-pass").value = "";
+        }
+    }
+
+    document.getElementById("msg").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendMessage();
+        }
+    });
+
+    function getTime() {
+        const now = new Date();
+        return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function generateId() { return 'msg_' + Math.random().toString(36).substr(2, 9); }
+
+    function sendMessage() {
+        const input = document.getElementById("msg");
+        const text = input.value.trim();
+        
+        if (text !== "") {
+            playBeep('send'); // ✅ Send sound
+
+            const messageData = {
+                id: generateId(),
+                user: username,
+                text: text,
+                time: getTime(),
+                type: 'text'
+            };
+            socket.emit("chat message", messageData);
+            input.value = ""; 
+        }
+    }
+
+    document.getElementById('file-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const base64Data = event.target.result;
+            const isImage = file.type.startsWith('image/');
+
+            playBeep('send'); // ✅ Send sound for file too
+
+            const fileData = {
+                id: generateId(),
+                user: username,
+                time: getTime(),
+                fileData: base64Data,
+                fileName: file.name,
+                type: isImage ? 'image' : 'file'
+            };
+            socket.emit("chat message", fileData);
+        };
+        reader.readAsDataURL(file); 
+        e.target.value = ''; 
+    });
+
+    function clearMessages() {
+        document.getElementById("messages").innerHTML = "";
+        document.getElementById("msg").focus();
+    }
+
+    socket.on("chat message", (data) => {
+        const messagesList = document.getElementById("messages");
+        const li = document.createElement("li");
+        
+        const isSelf = data.user === username;
+        li.className = `msg-line ${isSelf ? 'self' : 'other'}`;
+
+        if (!isSelf) {
+            playBeep('receive'); // ✅ Receive sound
+        }
+
+        let contentHTML = `
+            <span class="msg-time">[${data.time || ''}]</span>
+            <span class="sender-name">${data.user}:</span>
+        `;
+            
+        let payloadContent = '';
+
+        if (data.type === 'text') {
+            payloadContent = data.text;
+        } else if (data.type === 'image') {
+            payloadContent = `<br><img src="${data.fileData}" class="msg-image" alt="[img]" />`;
+        } else if (data.type === 'file') {
+            payloadContent = `<a href="${data.fileData}" download="${data.fileName}" class="file-link">[file: ${data.fileName}]</a>`;
+        }
+
+        contentHTML += `
+            <span class="msg-payload" data-id="${data.id}">
+                ${payloadContent}
+                <span class="saved-tag">S</span>
+            </span>
+        `;
+        
+        li.innerHTML = contentHTML;
+        messagesList.appendChild(li);
+        
+        while (messagesList.children.length > 4) {
+            messagesList.removeChild(messagesList.firstChild);
+        }
+        
+        messagesList.scrollTop = messagesList.scrollHeight;
+    });
+
+    document.getElementById('messages').addEventListener('click', function(e) {
+        const line = e.target.closest('.msg-line');
+        if (line) {
+            line.classList.toggle('saved');
+            const payload = line.querySelector('.msg-payload');
+            if(!payload) return;
+            
+            const msgId = payload.getAttribute('data-id');
+            let savedMsgs = JSON.parse(localStorage.getItem('savedTerminalChats')) || [];
+
+            if (line.classList.contains('saved')) {
+                if (!savedMsgs.includes(msgId)) savedMsgs.push(msgId);
+            } else {
+                savedMsgs = savedMsgs.filter(id => id !== msgId);
+            }
+            localStorage.setItem('savedTerminalChats', JSON.stringify(savedMsgs));
+        }
+    });
+</script>
+
+</body>
+</html>

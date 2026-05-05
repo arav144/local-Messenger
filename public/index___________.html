@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LAN Comments</title>
+    <style>
+        /* 🔥 YOUTUBE DARK THEME VARIABLES 🔥 */
+        :root {
+            --bg-color: #0f0f0f;
+            --surface-color: #272727;
+            --text-main: #f1f1f1;
+            --text-secondary: #aaaaaa;
+            --accent-blue: #3ea6ff;
+            --border-color: #3f3f3f;
+            --font-family: 'Roboto', Arial, sans-serif;
+            --base-font-size: 14px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            font-family: var(--font-family); 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            font-size: var(--base-font-size);
+            display: flex; 
+            justify-content: center; 
+            height: 100vh; 
+            overflow: hidden;
+        }
+
+        /* 🔥 LOGIN SCREEN CSS 🔥 */
+        #login-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(15, 15, 15, 0.95); 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .login-box {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 30px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .login-box h2 { margin-bottom: 20px; font-weight: 500; font-size: 20px; }
+        
+        .input-field {
+            background: transparent; border: none; border-bottom: 1px solid var(--text-secondary);
+            color: var(--text-main); font-family: var(--font-family); font-size: 16px;
+            outline: none; width: 100%; padding: 5px 0; margin-bottom: 25px;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus { border-bottom: 2px solid var(--text-main); }
+        
+        .btn-primary {
+            background-color: var(--text-main); color: var(--bg-color); border: none;
+            border-radius: 18px; padding: 10px 20px; font-size: 14px; font-weight: 500;
+            cursor: pointer; width: 100%; transition: background-color 0.2s;
+        }
+
+        .btn-primary:hover { background-color: #d1d1d1; }
+        
+        /* 🔥 CHAT / COMMENTS INTERFACE 🔥 */
+        #chat-container { 
+            width: 100%; max-width: 800px; display: none; 
+            flex-direction: column; height: 100vh; background-color: var(--bg-color);
+        }
+        
+        #header { 
+            padding: 20px; font-size: 20px; font-weight: bold; border-bottom: 1px solid var(--border-color);
+        }
+
+        #messages { 
+            list-style: none; flex-grow: 1; overflow-y: auto; display: flex; 
+            flex-direction: column; padding: 20px;
+        }
+        
+        #messages::-webkit-scrollbar { width: 8px; }
+        #messages::-webkit-scrollbar-thumb { background: #717171; border-radius: 4px; }
+        #messages::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
+
+        .msg-line { display: flex; margin-bottom: 20px; word-wrap: break-word; }
+        
+        .avatar {
+            width: 40px; height: 40px; border-radius: 50%; color: white; display: flex;
+            justify-content: center; align-items: center; font-weight: bold;
+            font-size: 18px; margin-right: 15px; flex-shrink: 0;
+        }
+
+        .msg-content { flex-grow: 1; }
+        .msg-header { display: flex; align-items: baseline; margin-bottom: 4px; }
+        
+        .sender-name { color: var(--text-main); font-weight: 500; font-size: 13px; margin-right: 8px; }
+        .self .sender-name { background-color: #606060; padding: 2px 6px; border-radius: 12px; font-size: 12px; } 
+        
+        .msg-time { color: var(--text-secondary); font-size: 12px; }
+        .msg-payload { font-size: 14px; line-height: 1.4; }
+        
+        .msg-actions {
+            display: flex; align-items: center; margin-top: 8px; color: var(--text-secondary);
+            font-size: 12px; font-weight: 500; cursor: pointer;
+        }
+
+        .msg-actions span { margin-right: 15px; }
+        .msg-actions span:hover { color: var(--text-main); }
+
+        .msg-image { max-width: 250px; border-radius: 8px; margin-top: 8px; display: block; }
+        .file-link { color: var(--accent-blue); text-decoration: none; }
+        .file-link:hover { text-decoration: underline; }
+
+        /* 🔥 INPUT AREA 🔥 */
+        #input-area { 
+            display: flex; align-items: flex-start; padding: 20px; 
+            border-top: 1px solid var(--border-color); background-color: var(--bg-color);
+        }
+        
+        .input-wrapper { flex-grow: 1; display: flex; flex-direction: column; }
+
+        #msg { 
+            width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--text-secondary);
+            color: var(--text-main); font-family: var(--font-family); font-size: 14px; 
+            outline: none; padding-bottom: 5px; transition: border-color 0.2s;
+        }
+
+        #msg:focus { border-bottom: 2px solid var(--text-main); }
+
+        .input-actions { display: flex; justify-content: flex-end; margin-top: 10px; align-items: center; }
+
+        #file-input { display: none; }
+        
+        .icon-btn { 
+            background: transparent; border: none; color: var(--text-secondary); font-size: 20px;
+            cursor: pointer; padding: 5px; margin-right: 15px; border-radius: 50%;
+        }
+
+        .icon-btn:hover { background-color: var(--surface-color); color: var(--text-main); }
+        
+        .comment-btn {
+            background-color: var(--accent-blue); color: #000; border: none;
+            border-radius: 18px; padding: 8px 16px; font-weight: 500; cursor: pointer;
+        }
+
+        .comment-btn:hover { background-color: #65b8ff; }
+        .comment-btn:disabled { background-color: #272727; color: #717171; cursor: default; }
+
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <h2>Join the discussion</h2>
+        <input type="text" id="sys-user" class="input-field" placeholder="Enter your name..." autocomplete="off" autofocus />
+        <button class="btn-primary" onclick="checkAuth()">Continue</button>
+    </div>
+</div>
+
+<div id="chat-container">
+    <div id="header">LAN Chat Room</div>
+    <ul id="messages"></ul>
+    
+    <div id="input-area">
+        <input type="file" id="file-input" />
+        <button class="icon-btn" onclick="document.getElementById('file-input').click()" title="Attach File">📎</button>
+        
+        <div class="input-wrapper">
+            <input type="text" id="msg" placeholder="Add a comment..." autocomplete="off" oninput="toggleCommentBtn()" />
+            <div class="input-actions">
+                <button id="send-btn" class="comment-btn" onclick="sendMessage()" disabled>Comment</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    // 🔥 Connect to the real Node.js Server 🔥
+    const socket = io();
+
+    let username = "User";
+
+    // 🔊 WebAudio API
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playBeep(type) {
+        try {
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'send') {
+                oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } else {
+                oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.15);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.15);
+            }
+        } catch(e) { console.log('Audio error:', e); }
+    }
+
+    function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            let value = (hash >> (i * 8)) & 0xFF;
+            color += ('00' + value.toString(16)).substr(-2);
+        }
+        return color;
+    }
+
+    document.getElementById("sys-user").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") checkAuth();
+    });
+
+    function checkAuth() {
+        const user = document.getElementById("sys-user").value.trim();
+        username = user !== "" ? user : "Anonymous";
+
+        audioCtx.resume().then(() => playBeep('send'));
+
+        // Switch Screens
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("chat-container").style.display = "flex";
+        
+        document.getElementById("msg").focus();
+    }
+
+    function toggleCommentBtn() {
+        const input = document.getElementById("msg");
+        const btn = document.getElementById("send-btn");
+        btn.disabled = input.value.trim() === "";
+    }
+
+    document.getElementById("msg").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            sendMessage();
+        }
+    });
+
+    function getTime() {
+        const now = new Date();
+        return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function generateId() { return 'msg_' + Math.random().toString(36).substr(2, 9); }
+
+    function sendMessage() {
+        const input = document.getElementById("msg");
+        const text = input.value.trim();
+        
+        if (text !== "") {
+            playBeep('send'); 
+
+            const messageData = {
+                id: generateId(),
+                user: username,
+                text: text,
+                time: getTime(),
+                type: 'text'
+            };
+            // Send to real server!
+            socket.emit("chat message", messageData);
+            
+            input.value = ""; 
+            toggleCommentBtn(); 
+        }
+    }
+
+    document.getElementById('file-input').addEventListener('change', function(e) {
+        const file = e.target.files; // Fixed logic for single file
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const base64Data = event.target.result;
+            const isImage = file.type.startsWith('image/');
+
+            playBeep('send'); 
+
+            const fileData = {
+                id: generateId(),
+                user: username,
+                time: getTime(),
+                fileData: base64Data,
+                fileName: file.name,
+                type: isImage ? 'image' : 'file'
+            };
+            socket.emit("chat message", fileData);
+        };
+        reader.readAsDataURL(file); 
+        e.target.value = ''; 
+    });
+
+    // Real Server message reception
+    socket.on("chat message", (data) => {
+        const messagesList = document.getElementById("messages");
+        const li = document.createElement("li");
+        
+        const isSelf = data.user === username;
+        li.className = `msg-line ${isSelf ? 'self' : 'other'}`;
+
+        // Only beep if someone else sent the message
+        if (!isSelf) {
+            playBeep('receive'); 
+        }
+
+        const avatarInitial = data.user ? data.user.charAt(0).toUpperCase() : '?';
+        const avatarBg = stringToColor(data.user || 'Unknown');
+
+        let payloadContent = '';
+        if (data.type === 'text') {
+            payloadContent = data.text;
+        } else if (data.type === 'image') {
+            payloadContent = `<img src="${data.fileData}" class="msg-image" alt="User Image" />`;
+        } else if (data.type === 'file') {
+            payloadContent = `<a href="${data.fileData}" download="${data.fileName}" class="file-link">📎 Download File: ${data.fileName}</a>`;
+        }
+
+        li.innerHTML = `
+            <div class="avatar" style="background-color: ${avatarBg};">${avatarInitial}</div>
+            <div class="msg-content">
+                <div class="msg-header">
+                    <span class="sender-name">@${data.user}</span>
+                    <span class="msg-time">${data.time}</span>
+                </div>
+                <div class="msg-payload" data-id="${data.id}">
+                    ${payloadContent}
+                </div>
+                <div class="msg-actions">
+                    <span class="like-btn" title="Like">👍 0</span>
+                    <span class="dislike-btn" title="Dislike">👎</span>
+                    <span title="Reply">Reply</span>
+                </div>
+            </div>
+        `;
+        
+        messagesList.appendChild(li);
+        
+        while (messagesList.children.length > 100) {
+            messagesList.removeChild(messagesList.firstChild);
+        }
+        
+        messagesList.scrollTop = messagesList.scrollHeight;
+    });
+
+    document.getElementById('messages').addEventListener('click', function(e) {
+        if (e.target.classList.contains('like-btn')) {
+            const btn = e.target;
+            if (btn.innerText.includes('0')) {
+                btn.innerText = '👍 1';
+                btn.style.color = '#3ea6ff';
+            } else {
+                btn.innerText = '👍 0';
+                btn.style.color = 'var(--text-secondary)';
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
